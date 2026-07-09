@@ -1,4 +1,36 @@
 import cv2
+import os
+
+# ----------------------------------------
+# Configuration
+# ----------------------------------------
+
+DATASET_PATH = "../dataset"
+
+IMAGE_LIMIT = 30
+
+# ----------------------------------------
+# Get Student ID
+# ----------------------------------------
+
+student_id = input(
+    "Enter Student ID: "
+)
+
+student_folder = os.path.join(
+    DATASET_PATH,
+    student_id
+)
+
+# Create folder if not exists
+os.makedirs(
+    student_folder,
+    exist_ok=True
+)
+
+print(
+    f"Saving images to {student_folder}"
+)
 
 # ----------------------------------------
 # Load Face Detector
@@ -18,7 +50,10 @@ if not camera.isOpened():
     print("Error : Cannot access webcam.")
     exit()
 
-print("Webcam started successfully.")
+# Image counter
+count = 0
+
+print("Starting face collection...")
 
 # ----------------------------------------
 # Start Infinite Loop
@@ -62,6 +97,36 @@ while True:
 
     for (x, y, w, h) in faces:
 
+        # Crop face
+        face = frame[
+            y:y+h,
+            x:x+w
+        ]
+
+        # Resize face
+        face = cv2.resize(
+            face,
+            (160,160)
+        )
+
+        # Save image
+        count += 1
+
+        image_path = os.path.join(
+            student_folder,
+            f"{count}.jpg"
+        )
+
+        cv2.imwrite(
+            image_path,
+            face
+        )
+
+        print(
+            f"Saved {count}/{IMAGE_LIMIT}"
+        )
+
+        # Draw rectangle around face
         cv2.rectangle(
             frame,
             (x, y),
