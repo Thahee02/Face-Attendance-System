@@ -32,12 +32,10 @@ student_id = input(
     "Enter Student ID: "
 )
 
-
 student_folder = os.path.join(
     DATASET_PATH,
     student_id
 )
-
 
 os.makedirs(
     student_folder,
