@@ -94,7 +94,6 @@ while True:
     )
 
     # Only one face allowed
-
     if len(faces) == 1:
 
         x,y,w,h = faces[0]
