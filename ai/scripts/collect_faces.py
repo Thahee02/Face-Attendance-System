@@ -1,5 +1,17 @@
-import cv2
 import os
+import sys
+import time
+from pathlib import Path
+import cv2
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+AI_ROOT = SCRIPT_DIR.parent
+
+if str(AI_ROOT) not in sys.path:
+    sys.path.insert(0, str(AI_ROOT))
+
+from utils.image_quality_check_utils import is_blurry
+
 
 # ----------------------------------------
 # Configuration
@@ -9,31 +21,32 @@ DATASET_PATH = "../dataset"
 
 IMAGE_LIMIT = 30
 
+CAPTURE_DELAY = 1
+
+
 # ----------------------------------------
-# Get Student ID
+# Student ID
 # ----------------------------------------
 
 student_id = input(
     "Enter Student ID: "
 )
 
+
 student_folder = os.path.join(
     DATASET_PATH,
     student_id
 )
 
-# Create folder if not exists
+
 os.makedirs(
     student_folder,
     exist_ok=True
 )
 
-print(
-    f"Saving images to {student_folder}"
-)
 
 # ----------------------------------------
-# Load Face Detector
+# Face Detector
 # ----------------------------------------
 
 face_detector = cv2.CascadeClassifier(
@@ -41,131 +54,138 @@ face_detector = cv2.CascadeClassifier(
     "haarcascade_frontalface_default.xml"
 )
 
-# Open Webcam
-camera = cv2.VideoCapture(0)
-
-# Check whether webcam opened successfully
-if not camera.isOpened():
-
-    print("Error : Cannot access webcam.")
-    exit()
-
-# Image counter
-count = 0
-
-print("Starting face collection...")
 
 # ----------------------------------------
-# Start Infinite Loop
+# Webcam
+# ----------------------------------------
+
+camera = cv2.VideoCapture(0)
+
+if not camera.isOpened():
+
+    print("Cannot open webcam")
+    exit()
+
+count = 0
+last_capture_time = 0
+
+print("Starting collection...")
+
+
+# ----------------------------------------
+# Main Loop
 # ----------------------------------------
 
 while True:
 
-    # Read one frame
     success, frame = camera.read()
 
-    # If frame cannot be read
-
     if not success:
-
-        print("Cannot receive frame.")
         break
-
-    # ------------------------------------
-    # Convert to Grayscale
-    # ------------------------------------
 
     gray = cv2.cvtColor(
         frame,
         cv2.COLOR_BGR2GRAY
     )
 
-    # ------------------------------------
-    # Detect Faces
-    # ------------------------------------
-
     faces = face_detector.detectMultiScale(
         gray,
         scaleFactor=1.1,
         minNeighbors=5,
-        minSize=(100, 100)
+        minSize=(100,100)
     )
 
-    # ------------------------------------
-    # Draw Rectangle
-    # ------------------------------------
+    # Only one face allowed
 
-    for (x, y, w, h) in faces:
+    if len(faces) == 1:
 
-        # Crop face
+        x,y,w,h = faces[0]
+
         face = frame[
             y:y+h,
             x:x+w
         ]
 
-        # Resize face
         face = cv2.resize(
             face,
             (160,160)
         )
 
-        # Save image
-        count += 1
+        current_time = time.time()
 
-        image_path = os.path.join(
-            student_folder,
-            f"{count}.jpg"
-        )
+        # Check delay
+        if (current_time - last_capture_time>= CAPTURE_DELAY):
 
-        cv2.imwrite(
-            image_path,
-            face
-        )
+            # Check blur
+            if not is_blurry(face):
 
-        print(
-            f"Saved {count}/{IMAGE_LIMIT}"
-        )
+                count += 1
 
-        # Draw rectangle around face
+                image_path = os.path.join(
+                    student_folder,
+                    f"{count}.jpg"
+                )
+
+                cv2.imwrite(
+                    image_path,
+                    face
+                )
+
+                last_capture_time = current_time
+
+                print(f"Saved {count}/{IMAGE_LIMIT}")
+
+
+        # Draw rectangle
         cv2.rectangle(
             frame,
-            (x, y),
-            (x + w, y + h),
-            (0, 255, 0),
+            (x,y),
+            (x+w,y+h),
+            (0,255,0),
+            2
+        )
+
+    else:
+
+        cv2.putText(
+            frame,
+            "Only one person allowed",
+            (20,80),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0,0,255),
             2
         )
 
 
-    # ------------------------------------
-    # Show Face Count
-    # ------------------------------------
-
+    # Progress
     cv2.putText(
         frame,
-        f"Faces : {len(faces)}",
-        (20, 40),
+        f"Images: {count}/{IMAGE_LIMIT}",
+        (20,40),
         cv2.FONT_HERSHEY_SIMPLEX,
         1,
-        (255, 0, 0),
+        (255,0,0),
         2
     )
 
-    # Show frame
+
     cv2.imshow(
-        "Student Face Collection - Press 'q' to Quit",
+        "Face Dataset Collector",
         frame
     )
 
-    # Check for 'q' key press to exit
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    # Finish
+    if count >= IMAGE_LIMIT:
+        print("Dataset completed.")
         break
 
-# ----------------------------------------
-# Release Resources
-# ----------------------------------------
+    # Exit on 'q' key or 'Q' key
+    if cv2.waitKey(1) & (0xFF == ord("q") or 0xFF == ord("Q")):
+        break
+
 
 camera.release()
-
 cv2.destroyAllWindows()
 
-print("Program Closed.")
+print("Camera closed.")
