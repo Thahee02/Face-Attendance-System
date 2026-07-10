@@ -23,7 +23,7 @@ app = FaceAnalysis(name="buffalo_l")
 # Change to 0 if you have a CUDA-compatible GPU configured.
 app.prepare(
     ctx_id=-1,
-    det_size=(640, 640)
+    det_size=(160,160)
 )
 
 print("Model loaded successfully.")
