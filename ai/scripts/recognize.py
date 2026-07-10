@@ -1,10 +1,19 @@
 import pickle
+import sys
+from pathlib import Path
+
 import cv2
 import numpy as np
 
 from insightface.app import FaceAnalysis
 
-from ai.utils.cosine_similarity_check import cosine_similarity
+SCRIPT_DIR = Path(__file__).resolve().parent
+AI_ROOT = SCRIPT_DIR.parent
+
+if str(AI_ROOT) not in sys.path:
+    sys.path.insert(0, str(AI_ROOT))
+
+from utils.cosine_similarity_check import cosine_similarity
 
 
 # -----------------------------------------
@@ -89,7 +98,6 @@ while True:
 
         # Check threshold
         if best_score < THRESHOLD:
-
             best_student = "Unknown"
 
         # Face box
