@@ -28,9 +28,7 @@ CAPTURE_DELAY = 1
 # Student ID
 # ----------------------------------------
 
-student_id = input(
-    "Enter Student ID: "
-)
+student_id = input("Enter Student ID: ") 
 
 student_folder = os.path.join(
     DATASET_PATH,
