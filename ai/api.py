@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from fastapi import Form
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 
@@ -7,13 +10,15 @@ import numpy as np
 
 from insightface.app import FaceAnalysis
 
-from ai.utils.cosine_similarity_check import cosine_similarity
+from utils.cosine_similarity_check import cosine_similarity
+
 
 # ----------------------------------------
 # Configuration
 # ----------------------------------------
 
-EMBEDDING_FILE = "embeddings/embeddings.pkl"
+BASE_DIR = Path(__file__).resolve().parent
+EMBEDDING_FILE = BASE_DIR / "embeddings" / "embeddings.pkl"
 
 THRESHOLD = 0.65
 
@@ -134,5 +139,18 @@ async def recognize(image: UploadFile = File(...)):
             "status":"success",
             "student_id":best_student,
             "confidence":round(float(best_score),4)
+        }
+    )
+
+
+@app.post("/register")
+async def register(student_id: str = Form(...), image: UploadFile = File(...)):
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "student_id": student_id,
+            "message": "Face received successfully."
         }
     )
