@@ -83,18 +83,19 @@ while True:
         best_student = "Unknown"
 
         # Compare with database
-        for record in embedding_database:
+        for student_id, embeddings in embedding_database.items():
 
-            score = cosine_similarity(
-                embedding,
-                record["embedding"]
-            )
+            for record in embeddings:
 
-            if score > best_score:
+                score = cosine_similarity(
+                    embedding,
+                    record["embedding"]
+                )
 
-                best_score = score
+                if score > best_score:
 
-                best_student = record["student_id"]
+                    best_score = score
+                    best_student = student_id
 
         # Check threshold
         if best_score < THRESHOLD:
@@ -124,10 +125,7 @@ while True:
             2
         )
 
-    cv2.imshow(
-        "Face Recognition",
-        frame
-    )
+    cv2.imshow("Face Recognition", frame)
 
     if cv2.waitKey(1) & (0xFF == ord("q") or 0xFF == ord("Q")):
         break

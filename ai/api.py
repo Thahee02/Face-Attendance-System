@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from django.http import JsonResponse
 from fastapi import Form
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
@@ -7,9 +8,12 @@ from fastapi.responses import JSONResponse
 import pickle
 import cv2
 import numpy as np
+from datetime import datetime
+import os
 
 from insightface.app import FaceAnalysis
 
+from ai.utils.embeddings_crud_utils import load_embeddings, save_embeddings
 from utils.cosine_similarity_check import cosine_similarity
 
 
@@ -142,15 +146,61 @@ async def recognize(image: UploadFile = File(...)):
         }
     )
 
+# ----------------------------------------
+# Register API
+# ----------------------------------------
 
 @app.post("/register")
 async def register(student_id: str = Form(...), image: UploadFile = File(...)):
 
-    return JSONResponse(
+    image_bytes = await image.read()
+
+    image_array = np.frombuffer(image_bytes, np.uint8)
+
+    frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+
+    if frame is None:
+
+        return JsonResponse(
+            status_code=400,
+            content={
+                "status":"failed",
+                "message":"Invalid image."
+            }
+        )
+
+    faces = face_model.get(frame)
+
+    if len(faces) != 1:
+
+        return JsonResponse(
+            status_code=400,
+            content={
+                "status":"failed",
+                "message":"Exactly one face required."
+            }
+        )   
+
+    embedding = faces[0].embedding
+
+    database = load_embeddings()
+
+    if student_id not in database:
+        database[student_id] = []
+
+    database[student_id].append({
+        "embedding": embedding,
+        "model": "buffalo_l",
+        "created_at": datetime.utcnow().isoformat()
+    })
+
+    save_embeddings(database)
+
+    return JsonResponse(
         status_code=200,
         content={
-            "status": "success",
+            "status":"success",
             "student_id": student_id,
-            "message": "Face received successfully."
+            "message":"Embedding saved successfully."
         }
     )
